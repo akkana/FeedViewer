@@ -1,0 +1,14 @@
+<resources>
+    <string name="app_name">FeedViewer</string>
+
+    <string name="action_settings">Settings</string>
+    <string name="action_back">Back</string>
+    <string name="action_del">Del</string>
+    <string name="action_feeds">Feeds</string>
+    <string name="action_fetch">Fetch Feeds</string>
+    <string name="action_toc">Contents</string>
+
+    <string name="next">Next</string>
+    <string name="previous">Previous</string>
+
+</resources>

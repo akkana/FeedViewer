@@ -1,0 +1,37 @@
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    tools:context="com.shallowsky.feedviewer.MainActivity">
+    <item
+        android:id="@+id/action_settings"
+        android:orderInCategory="100"
+        android:title="@string/action_settings"
+        app:showAsAction="never" />
+    <item
+        android:id="@+id/action_back"
+        android:icon="?attr/actionModeCloseDrawable"
+        android:orderInCategory="101"
+        android:title="Back"
+        android:visible="true"
+        app:showAsAction="always" />
+    <item
+        android:id="@+id/action_feeds"
+        android:orderInCategory="101"
+        android:title="Feeds"
+        android:visible="true"
+        app:showAsAction="always" />
+    <item
+        android:id="@+id/action_del"
+        android:orderInCategory="102"
+        android:title="Del"
+        android:visible="true"
+        app:showAsAction="always" />
+    <item
+        android:id="@+id/action_toc"
+        android:orderInCategory="101"
+        android:title="Table of Contents" />
+    <item
+        android:id="@+id/action_fetch"
+        android:orderInCategory="102"
+        android:title="Fetch feeds" />
+</menu>
