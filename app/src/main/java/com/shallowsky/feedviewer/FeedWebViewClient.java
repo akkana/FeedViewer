@@ -16,15 +16,21 @@ import java.net.URISyntaxException;
 import static android.util.Log.d;
 
 public class FeedWebViewClient extends WebViewClient {
+    /*
     @Override
     public void onPageFinished(WebView webView, final String url) {
         // d("FeedViewer", "finished loading " + url);
-        // XXX eventually this should try to restore scroll position
+        // try to restore scroll position
+        FeedWebView feedWebView = (FeedWebView)webView;
+        feedWebView.restoreScroll();
     }
+     */
 
     @Override
-    public boolean shouldOverrideUrlLoading(WebView webview, String url) {
+    public boolean shouldOverrideUrlLoading(WebView webView, String url) {
         d("FeedViewer", "shouldOverrideUrlLoading " + url);
+        FeedWebView feedWebView = (FeedWebView)webView;
+        feedWebView.saveScrollPos();
 
         // Don't load if we're waiting for a longpress to time out:
         /*
@@ -49,7 +55,7 @@ public class FeedWebViewClient extends WebViewClient {
                 // The scheme isn't file:// so offer to save it for later.
                 // Android Studio doesn't like just casting it in place when calling handle,
                 // so use another variable.
-                FeedWebView fwv = (FeedWebView)webview;
+                FeedWebView fwv = (FeedWebView)webView;
                 fwv.handleExternalLink(url);
                 return true;
             }

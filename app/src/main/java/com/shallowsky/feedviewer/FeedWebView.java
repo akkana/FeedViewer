@@ -19,6 +19,7 @@ import android.util.Base64;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
+import android.webkit.WebChromeClient;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
@@ -36,6 +37,7 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
+import java.util.Map;
 
 import static android.os.Environment.getExternalStorageDirectory;
 import static android.util.Log.d;
@@ -86,9 +88,7 @@ public class FeedWebView extends WebView {
         mFeedDir = activity.getExternalFilesDir(null);
         mBasePaths.add(mFeedDir);
         mSharedPreferences = PreferenceManager.getDefaultSharedPreferences(mActivity.getApplicationContext());
-        // mFeedDir = new File(getExternalStorageDirectory().getAbsolutePath()
-        //         + "/Android/data/com.shallowsky.feedviewer/files");
-        d("FeedViewer", "Got feed dir " + mFeedDir);
+        // d("FeedViewer", "Got feed dir " + mFeedDir);
 
         mWebSettings = getSettings();
         mWebSettings.setJavaScriptEnabled(false);
@@ -100,6 +100,19 @@ public class FeedWebView extends WebView {
         //mFontSize = mWebSettings.getDefaultFontSize();
 
         setWebViewClient(new FeedWebViewClient());
+        // https://stackoverflow.com/a/22920457
+        setWebChromeClient(new WebChromeClient()     {
+        @Override
+        public void onProgressChanged(WebView view, int progress) {
+            if ( view.getProgress()==100) {
+                // I save Y w/in Bundle so orientation changes [in addition to
+                // initial loads] will reposition to last location
+                d("FeedViewer", "restoreScroll from onProgressChanged");
+                restoreScroll();
+            }
+        }
+
+     } );
 
         loadFeedList();
     }
@@ -138,19 +151,109 @@ I/ActivityManager(  818): Process com.shallowsky.FeedViewer (pid 32069) (adj 13)
         // being called first; but some people say it happens, and
         // clearly we're sometimes getting killed without prefs being
         // saved, so try saving them again here:
-        saveState();
+        saveScrollPos();
     }
 
+    // Clean up any scroll preferences for deletedfiles/directories.
+    // That includes not just what we just immediately deleted, but anything
+    // that was deleted previously and somehow didn't get its pref removed.
+    private void cleanUpScrollPrefs() {
+        Log.d("FeedViewer", "Trying to delete old scroll prefs");
+        SharedPreferences.Editor editor = mSharedPreferences.edit();
+        Map<String,?> allprefs = mSharedPreferences.getAll();
+        for (Map.Entry<String,?> entry : allprefs.entrySet()) {
+            String key = entry.getKey();
+            if (key.startsWith("scroll_") && !key.endsWith("feeds")) {
+                String path = key.substring(7);
+                File file = new File(path);
+                if(! file.exists()) {
+                    editor.remove(key);
+                    Log.d("FeedViewer", "Removed pref " + key);
+                }
+            }
+        }
+        editor.commit();
+
+        // printPreferences();
+    }
+
+    //////////////////////////
+    // Settings and preferences
     public void editSettings() {
         promptForFeedServer();
     }
 
-    public void saveState() {
+    // The url passed in here should already have had named anchors stripped.
+    private String url_to_scrollpos_key(String url) {
+        if (onFeedsPage(url) || nullURL(url))
+            return "scroll_feeds";
+
+        // First, remove any named anchor
+        try {
+            int hash = url.indexOf('#');
+            if (hash > 0)
+                url = url.substring(0, hash);
+        } catch (Exception e) {
+            Log.d("FeedViewer",
+                  "Exception in remove_named_anchor, url = " + url);
+        }
+
+        if (url.startsWith("file://")) {
+            url = url.substring(7);
+        }
+
+        return "scroll_" + url;
+    }
+
+    public void saveScrollPos() {
         // Unfortunately this usually doesn't work. But doesn't hurt to try:
         d("FeedViewer", "Can't save state yet");
-        // saveScrollPos();
-        // saveStateInPreferences();
+
+        SharedPreferences.Editor editor = mSharedPreferences.edit();
+        String url = getUrl();
+        String scrollkey = url_to_scrollpos_key(url);
+        int scrollpos = getScrollY();
+        editor.putInt(scrollkey, scrollpos);
+        editor.putString("url", url);
+        editor.commit();
+        d("FeedViewer", "Saved scroll position " + scrollpos + " for " + scrollkey);
+        printPreferences();
     }
+
+    public void restoreScroll() {
+        String url = getUrl();
+        String scrollkey = url_to_scrollpos_key(url);
+        int scrollpos = mSharedPreferences.getInt(scrollkey, 0);
+
+        // Scroll twice. First, try to scroll right now.
+        // BUt since that often doesn't work, for reasons no one seems to know,
+        // also schedule a second scroll a few centiseconds from now, and hope
+        // one or the other of them works.
+        scrollTo(0, scrollpos);
+        postDelayed( new Runnable () {
+            @Override
+            public void run() {
+                scrollTo(0, scrollpos);
+            }
+        }, 300);
+        d("FeedViewer", "Scrolled to " + scrollpos + " on " + scrollkey);
+    }
+
+    private void printPreferences() {
+        Log.d("FeedViewer", "========== Now complete pref list looks like:");
+        Map<String,?> allprefs = mSharedPreferences.getAll();
+        for (Map.Entry<String,?> entry : allprefs.entrySet())
+            if (entry != null && entry.getKey() != null) {
+                if (entry.getValue() == null)
+                    Log.d("FeedViewer", entry.getKey() + " : null");
+                else
+                    Log.d("FeedViewer", entry.getKey() + " : '"
+                          + entry.getValue() + "'");
+            }
+        Log.d("FeedViewer", "==========");
+    }
+
+    ////// End settings
 
     //
     // Display the top-level page, listing all feeds present.
@@ -239,8 +342,8 @@ I/ActivityManager(  818): Process com.shallowsky.FeedViewer (pid 32069) (adj 13)
         }
         resultspage.append("<p>End of feed list\n</body>\n</html>\n");
 
-        d("FeedViewer", "Full index page:\n" + resultspage.toString());
-        d("FeedViewer", "Loading with base url " + "file://" + mFeedDir);
+        // d("FeedViewer", "Full index page:\n" + resultspage.toString());
+        // d("FeedViewer", "Loading with base url " + "file://" + mFeedDir);
 
         loadDataWithBaseURL("file://" + mFeedDir, resultspage.toString(),
                 "text/html", "utf-8", null);
@@ -451,9 +554,6 @@ I/ActivityManager(  818): Process com.shallowsky.FeedViewer (pid 32069) (adj 13)
     //////////// Done with feed fetching
 
     //////////// page navigation and utility functions
-    public void saveScrollPos() {
-        d("FeedViewer", "Can't save scroll position yet");
-    }
 
     // Figure out a sane URI that can be turned into a path
     // for the webview's current URI. Otherwise, we'll get things
@@ -603,10 +703,6 @@ I/ActivityManager(  818): Process com.shallowsky.FeedViewer (pid 32069) (adj 13)
         }
     }
 
-    public void printPreferences() {
-        d("FeedFetcher", "Can't print preferences yet");
-    }
-
     // Recursively delete a directory.
     boolean deleteDir(File dir) {
         if (dir.isDirectory()) {
@@ -703,7 +799,7 @@ I/ActivityManager(  818): Process com.shallowsky.FeedViewer (pid 32069) (adj 13)
 
                                     // Don't retain scroll position
                                     // for deleted pages.
-                                    // cleanUpScrollPrefs();
+                                    cleanUpScrollPrefs();
                                 }
                             })
                     .setNegativeButton("Cancel",

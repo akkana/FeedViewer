@@ -52,6 +52,17 @@ public class MainActivity extends AppCompatActivity implements GestureDetector.O
 
         mDetector = new GestureDetector(this, this);
 
+        // This is supposed to hide the navigation bar at the bottom
+        // of the screen, but it comes back whenever a user taps near
+        // the bottom, which makes it super confusing.
+        // Better to just put up with losing the extra couple lines.
+        /*
+        View decorView = getWindow().getDecorView();
+        // Hide both the navigation bar and the status bar.
+        int uiOptions = View.SYSTEM_UI_FLAG_HIDE_NAVIGATION;
+        decorView.setSystemUiVisibility(uiOptions);
+         */
+
         //mStatusBar.setBackgroundColor(0x00334444);
         //mStatusBar.setCursorVisible(false);
         //mStatusBar.setTextColor(0xffffffff);
