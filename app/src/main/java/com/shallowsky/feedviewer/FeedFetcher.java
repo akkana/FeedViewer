@@ -28,6 +28,7 @@ import java.net.URL;
 import java.net.URLEncoder;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
 import java.util.Set;
@@ -434,9 +435,10 @@ public class FeedFetcher {
             for (String f : filenames) {
                 if (isCancelled())
                     return "Cancelling file downloads.";
+
                 if (f.equals(mEOFstr)) {
                     Log.d("FeedDetcher", "Found EOF string, end of manifest");
-                    break;
+                    continue;    // don't break, because ../feeds.css is after the MANIFEST
                 }
 
                 // Skip directories; we'll make them later with mkdirs.
@@ -449,7 +451,7 @@ public class FeedFetcher {
                     if (fl.endsWith(".jpg") || fl.endsWith("jpeg")
                         || fl.endsWith(".svg")
                         || fl.endsWith(".png") || fl.endsWith("gif")) {
-                        Log.d("FeedDetcher", "Skipping image " + f);
+                        Log.d("FeedFetcher", "Skipping image " + f);
                         continue;
                     }
                 }
@@ -504,6 +506,18 @@ public class FeedFetcher {
                     }
                     continue;
                 }
+            }
+
+            // Try to get the feeds.css, in case it's changed.
+            try {
+                String cssurl = feeddirbase  + "/feeds.css";
+                String cssfile = mLocalDir + "/feeds.css";
+                FileOutputStream fos = new FileOutputStream(cssfile);
+                downloadUrlToFile(cssurl, fos);
+                fos.close();
+                publishProgress("Fetched css file from " + cssurl + " to " + cssfile);
+            } catch (Exception e) {
+                publishProgress("Couldn't fetch css file");
             }
 
             mToastLength = Toast.LENGTH_LONG;

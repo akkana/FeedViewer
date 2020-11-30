@@ -159,7 +159,13 @@ I/ActivityManager(  818): Process com.shallowsky.FeedViewer (pid 32069) (adj 13)
         //d("FeedViewer", "Loading feed list");
         //d("FeedViewer", "mBasePaths: " + mBasePaths.toString());
 
-        StringBuilder resultspage = new StringBuilder("");
+        StringBuilder resultspage = new StringBuilder("<html>\n<head>\n");
+        resultspage.append("<title>Feeds</title>\n");
+        resultspage.append("<meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\">\n");
+        resultspage.append("<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\n");
+        resultspage.append("<link rel=\"stylesheet\" type=\"text/css\" title=\"Feeds\"\n");
+        resultspage.append("      href=\"file://" + mFeedDir + "/feeds.css\"/>\n");
+        resultspage.append("</head>\n<body>\n");
 
         // Loop over the basedirs again to find story dirs to show:
         for (int base = 0; base < mBasePaths.size(); ++base) {
@@ -231,10 +237,10 @@ I/ActivityManager(  818): Process com.shallowsky.FeedViewer (pid 32069) (adj 13)
                 }
             }
         }
-        resultspage.append("<p>End of feed list\n");
+        resultspage.append("<p>End of feed list\n</body>\n</html>\n");
 
-        //d("FeedViewer", "Full index page:" + resultspage.toString());
-        //d("FeedViewer", "Loading with base url " + "file://" + mFeedDir);
+        d("FeedViewer", "Full index page:\n" + resultspage.toString());
+        d("FeedViewer", "Loading with base url " + "file://" + mFeedDir);
 
         loadDataWithBaseURL("file://" + mFeedDir, resultspage.toString(),
                 "text/html", "utf-8", null);

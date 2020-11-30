@@ -65,7 +65,7 @@ public class MainActivity extends AppCompatActivity implements GestureDetector.O
 
     @Override
     public void onPause() {
-        mWebView.saveState();
+        mWebView.cleanUp();
         super.onPause();
     }
 
