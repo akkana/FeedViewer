@@ -16,7 +16,8 @@ but it will take a while to get rid of all the little annoyances.
 ## To Do
 
 - Taps below or above WebView shouldn't cause scrolling
-- Tapping on named anchors then scrolls to top
+- Set chrome colors, especially for menu: the default is unreadable
+  dark grey on black.
 - Allow font resizing
 
 
