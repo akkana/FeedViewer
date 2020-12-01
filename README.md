@@ -10,17 +10,14 @@ Android Studio can't build or even import it.)
 ## Warning
 
 This new version of FeedMe is not yet fully functional.
-In particular, it doesn't remember scroll position for each feed,
-so it's likely to be frustrating to use.
-I'll remove this warning when that's fixed.
+It can do the basics: fetch feeds, read, scroll, and delete,
+but it will take a while to get rid of all the little annoyances.
 
 ## To Do
 
-Important things not yet implemented:
-
-- Save scroll position
+- Taps below or above WebView shouldn't cause scrolling
+- Tapping on named anchors then scrolls to top
 - Allow font resizing
-- fetch feeds.css from server
 
 
 ## Feed Directory Structure
@@ -31,11 +28,12 @@ https://shallowsky.com/software/feedme/
 https://github.com/akkana/feedme
 
 
-FeedViewer reads, imports, and deletes HTML files in directories
-arranged in the directory structure produced by FeedMe:
+FeedViewer reads, imports, and deletes collections of  HTML files in
+directories arranged in the directory structure produced by FeedMe:
 
 ```
-[root]
+[feeds root]
+|
 |    feeds.css
 |
 |____11-16-Mon
@@ -60,8 +58,8 @@ arranged in the directory structure produced by FeedMe:
 For each directory, the _index.html_ provides links to the numbered
 HTML files.
 
-feeds.css is not fetched automatically; you'll have to copy it to
-your Android device yourself. I hope to make this automatic eventually.
+You can put a feeds.css immediately under feeds on the server and
+it will automatically be downloaded along with the day's feeds.
 
 ## Fetching Feeds
 
