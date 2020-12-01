@@ -18,7 +18,9 @@ but it will take a while to get rid of all the little annoyances.
 - Taps below or above WebView shouldn't cause scrolling
 - Set chrome colors, especially for menu: the default is unreadable
   dark grey on black.
+- Fix setting brightness by dragging down the left side.
 - Allow font resizing
+- Settings
 
 
 ## Feed Directory Structure

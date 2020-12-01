@@ -16,8 +16,11 @@ import android.preference.PreferenceManager;
 import android.text.method.ScrollingMovementMethod;
 import android.util.AttributeSet;
 import android.util.Base64;
+import android.util.DisplayMetrics;
 import android.util.Log;
+import android.view.GestureDetector;
 import android.view.LayoutInflater;
+import android.view.MotionEvent;
 import android.view.View;
 import android.webkit.WebChromeClient;
 import android.webkit.WebSettings;
@@ -28,6 +31,8 @@ import android.widget.EditText;
 import android.widget.ScrollView;
 import android.widget.TextView;
 import android.widget.Toast;
+
+import androidx.core.view.GestureDetectorCompat;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -44,7 +49,6 @@ import static android.util.Log.d;
 
 public class FeedWebView extends WebView {
     MainActivity mActivity;
-    Context mContext;
 
     // The main, writable, feed dir: where to download feeds
     File mFeedDir;
@@ -65,15 +69,15 @@ public class FeedWebView extends WebView {
 
     WebSettings mWebSettings; // Settings for the WebView, e.g. font size, allow file access.
 
-    // Will probably eventually need ObservableWebView methods here
+    private GestureDetectorCompat mDetector;
+
+    // Might eventually need ObservableWebView methods here
 
     public FeedWebView(final Context context) {
-        //mContext = context;
         super(context);
     }
 
     public FeedWebView(final Context context, final AttributeSet attrs) {
-        //mContext = context;
         super(context, attrs);
     }
 
@@ -96,28 +100,28 @@ public class FeedWebView extends WebView {
         // One person suggests this might help in getting shouldOverrideUrlLoading to work,
         // but it doesn't help:
         //mWebSettings.setSupportMultipleWindows(true);
-
         //mFontSize = mWebSettings.getDefaultFontSize();
 
         setWebViewClient(new FeedWebViewClient());
         // https://stackoverflow.com/a/22920457
-        setWebChromeClient(new WebChromeClient()     {
-        @Override
-        public void onProgressChanged(WebView view, int progress) {
-            if ( view.getProgress()==100) {
-                // I save Y w/in Bundle so orientation changes [in addition to
-                // initial loads] will reposition to last location
-                d("FeedViewer", "restoreScroll from onProgressChanged");
-                restoreScroll();
+        setWebChromeClient(new WebChromeClient() {
+            @Override
+            public void onProgressChanged(WebView view, int progress) {
+                if (view.getProgress() == 100) {
+                    // I save Y w/in Bundle so orientation changes [in addition to
+                    // initial loads] will reposition to last location
+                    d("FeedViewer", "restoreScroll from onProgressChanged");
+                    restoreScroll();
+                }
             }
-        }
+        });
 
-     } );
+        // https://developer.android.com/training/gestures/detector
+        mDetector = new GestureDetectorCompat(mActivity.getApplicationContext(), new MyGestureListener());
 
+        // XXX This should actually restore whatever feed it was previously on.
         loadFeedList();
     }
-
-
 
     //
     // Functions called from the activity toolbar or menu:
@@ -160,13 +164,13 @@ I/ActivityManager(  818): Process com.shallowsky.FeedViewer (pid 32069) (adj 13)
     private void cleanUpScrollPrefs() {
         Log.d("FeedViewer", "Trying to delete old scroll prefs");
         SharedPreferences.Editor editor = mSharedPreferences.edit();
-        Map<String,?> allprefs = mSharedPreferences.getAll();
-        for (Map.Entry<String,?> entry : allprefs.entrySet()) {
+        Map<String, ?> allprefs = mSharedPreferences.getAll();
+        for (Map.Entry<String, ?> entry : allprefs.entrySet()) {
             String key = entry.getKey();
             if (key.startsWith("scroll_") && !key.endsWith("feeds")) {
                 String path = key.substring(7);
                 File file = new File(path);
-                if(! file.exists()) {
+                if (!file.exists()) {
                     editor.remove(key);
                     Log.d("FeedViewer", "Removed pref " + key);
                 }
@@ -195,7 +199,7 @@ I/ActivityManager(  818): Process com.shallowsky.FeedViewer (pid 32069) (adj 13)
                 url = url.substring(0, hash);
         } catch (Exception e) {
             Log.d("FeedViewer",
-                  "Exception in remove_named_anchor, url = " + url);
+                    "Exception in remove_named_anchor, url = " + url);
         }
 
         if (url.startsWith("file://")) {
@@ -224,7 +228,7 @@ I/ActivityManager(  818): Process com.shallowsky.FeedViewer (pid 32069) (adj 13)
             //d("FeedViewer", url + "is a named anchor: not scrolling");
             return;
         }
-       String scrollkey = url_to_scrollpos_key(url);
+        String scrollkey = url_to_scrollpos_key(url);
         int scrollpos = mSharedPreferences.getInt(scrollkey, 0);
 
         // Scroll twice. First, try to scroll right now.
@@ -232,7 +236,7 @@ I/ActivityManager(  818): Process com.shallowsky.FeedViewer (pid 32069) (adj 13)
         // also schedule a second scroll a few centiseconds from now, and hope
         // one or the other of them works.
         scrollTo(0, scrollpos);
-        postDelayed( new Runnable () {
+        postDelayed(new Runnable() {
             @Override
             public void run() {
                 scrollTo(0, scrollpos);
@@ -243,14 +247,14 @@ I/ActivityManager(  818): Process com.shallowsky.FeedViewer (pid 32069) (adj 13)
 
     private void printPreferences() {
         Log.d("FeedViewer", "========== Now complete pref list looks like:");
-        Map<String,?> allprefs = mSharedPreferences.getAll();
-        for (Map.Entry<String,?> entry : allprefs.entrySet())
+        Map<String, ?> allprefs = mSharedPreferences.getAll();
+        for (Map.Entry<String, ?> entry : allprefs.entrySet())
             if (entry != null && entry.getKey() != null) {
                 if (entry.getValue() == null)
                     Log.d("FeedViewer", entry.getKey() + " : null");
                 else
                     Log.d("FeedViewer", entry.getKey() + " : '"
-                          + entry.getValue() + "'");
+                            + entry.getValue() + "'");
             }
         Log.d("FeedViewer", "==========");
     }
@@ -720,6 +724,7 @@ I/ActivityManager(  818): Process com.shallowsky.FeedViewer (pid 32069) (adj 13)
         // The directory is now empty so delete it.
         return dir.delete();
     }
+
     /*
      * Confirm whether to delete the current feed, then do so.
      */
@@ -754,8 +759,8 @@ I/ActivityManager(  818): Process com.shallowsky.FeedViewer (pid 32069) (adj 13)
                                                     int id) {
                                     // mBlockSavingScrollPos = true;
                                     Log.d("FeedViewer",
-                                          "deleting "
-                                            + feeddir.getAbsolutePath());
+                                            "deleting "
+                                                    + feeddir.getAbsolutePath());
 
                                     deleteDir(feeddir);
 
@@ -776,12 +781,12 @@ I/ActivityManager(  818): Process com.shallowsky.FeedViewer (pid 32069) (adj 13)
                                         // subdirectories, it's time
                                         // to delete.
                                         Boolean hasChildDirs = false;
-                                        for (int i=0; i < children.length; ++i)
+                                        for (int i = 0; i < children.length; ++i)
                                             if (children[i].isDirectory()) {
                                                 hasChildDirs = true;
                                                 break;
                                             }
-                                        if (! hasChildDirs) {
+                                        if (!hasChildDirs) {
                                             deleteDir(parent);
                                         }
                                     }
@@ -807,7 +812,7 @@ I/ActivityManager(  818): Process com.shallowsky.FeedViewer (pid 32069) (adj 13)
                     .setNegativeButton("Cancel",
                             new DialogInterface.OnClickListener() {
                                 public void onClick(DialogInterface dialog,
-                                        int id) {
+                                                    int id) {
                                     dialog.cancel();
                                 }
                             });
@@ -831,7 +836,7 @@ I/ActivityManager(  818): Process com.shallowsky.FeedViewer (pid 32069) (adj 13)
                 .setNeutralButton("Save",
                         new DialogInterface.OnClickListener() {
                             public void onClick(DialogInterface dialog,
-                                    int id) {
+                                                int id) {
                                 mActivity.showTextMessage("Saving " + url);
                                 saveUrlForLater(url);
                             }
@@ -839,18 +844,18 @@ I/ActivityManager(  818): Process com.shallowsky.FeedViewer (pid 32069) (adj 13)
                 .setPositiveButton("Browse",
                         new DialogInterface.OnClickListener() {
                             public void onClick(DialogInterface dialog,
-                                    int id) {
+                                                int id) {
                                 mActivity.showTextMessage("Browsing " + url);
                                 Intent browserIntent
-                                    = new Intent(Intent.ACTION_VIEW,
-                                                 Uri.parse(url));
+                                        = new Intent(Intent.ACTION_VIEW,
+                                        Uri.parse(url));
                                 mActivity.startActivity(browserIntent);
                             }
                         })
                 .setNegativeButton("Cancel",
                         new DialogInterface.OnClickListener() {
                             public void onClick(DialogInterface dialog,
-                                    int id) {
+                                                int id) {
                                 dialog.cancel();
                             }
                         });
@@ -872,4 +877,90 @@ I/ActivityManager(  818): Process com.shallowsky.FeedViewer (pid 32069) (adj 13)
         }
     }
 
+    //
+    /////////////// events
+    //
+
+    // Tapping in the corners of the screen scroll up or down.
+    public boolean scrollIfInTargetZone(MotionEvent e) {
+        DisplayMetrics metrics = new DisplayMetrics();
+        mActivity.getWindowManager().getDefaultDisplay().getMetrics(metrics);
+        float screenWidth = metrics.widthPixels;
+        float screenHeight = metrics.heightPixels;
+
+        // Only accept taps in the corners, not the center --
+        // otherwise we'll have no way to tap on links at top/bottom.
+        float w = screenWidth / 4;
+        if (e.getRawX() > w && e.getRawX() < screenWidth - w) {
+            return false;
+        }
+
+        // Was the tap at the top or bottom of the screen?
+        if (e.getRawY() > screenHeight * .8) {
+            //mScrollLock = SystemClock.uptimeMillis();
+            pageDown(false);
+            // Don't try to save page position: we'll do that after scroll
+            // when we have a new page position.
+            return true;
+        }
+        // ... or near the top?
+        else if (e.getRawY() < screenHeight * .2) {
+            // ICK! but how do we tell how many pixels the buttons take? XXX
+            //mScrollLock = SystemClock.uptimeMillis();
+            pageUp(false);
+            // Again, don't save page position here, wait for callback.
+            return true;
+        }
+
+        // Else the tap was somewhere else: pass it along.
+        return false;
+    }
+
+    @Override
+    public boolean onTouchEvent(MotionEvent event) {
+        this.mDetector.onTouchEvent(event);
+        return super.onTouchEvent(event);
+    }
+
+    class MyGestureListener extends GestureDetector.SimpleOnGestureListener {
+        private static final String DEBUG_TAG = "FeedViewer";
+
+        @Override
+        public boolean onDown(MotionEvent event) {
+            //Log.d(DEBUG_TAG, "onDown: " + event.toString());
+            return true;
+        }
+
+        /*
+        @Override
+        public boolean onFling(MotionEvent event1, MotionEvent event2,
+                               float velocityX, float velocityY) {
+            Log.d(DEBUG_TAG, "onFling: " + event1.toString() + event2.toString());
+            return true;
+        }
+         */
+
+        @Override
+        public boolean onSingleTapUp(MotionEvent event) {
+            //Log.d(DEBUG_TAG, "onSingleTapUp: " + event.toString());
+
+            DisplayMetrics metrics = new DisplayMetrics();
+            mActivity.getWindowManager().getDefaultDisplay().getMetrics(metrics);
+            //int width = metrics.widthPixels;
+            int height = metrics.heightPixels;
+            //Log.d(DEBUG_TAG, "Y is " + event.getRawY() + ", height * .8 = " + height*.8);
+
+            if (event.getRawY() < height * .2) {
+                pageUp(false);
+                return true;
+            }
+            else if (event.getRawY() > height * .8) {
+                //Log.d(DEBUG_TAG, "Paging down");
+                pageDown(false);
+                return true;
+            }
+            return false;
+        }
+
+    }
 }
