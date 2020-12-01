@@ -206,9 +206,6 @@ I/ActivityManager(  818): Process com.shallowsky.FeedViewer (pid 32069) (adj 13)
     }
 
     public void saveScrollPos() {
-        // Unfortunately this usually doesn't work. But doesn't hurt to try:
-        d("FeedViewer", "Can't save state yet");
-
         SharedPreferences.Editor editor = mSharedPreferences.edit();
         String url = getUrl();
         String scrollkey = url_to_scrollpos_key(url);
@@ -222,7 +219,12 @@ I/ActivityManager(  818): Process com.shallowsky.FeedViewer (pid 32069) (adj 13)
 
     public void restoreScroll() {
         String url = getUrl();
-        String scrollkey = url_to_scrollpos_key(url);
+        // Is it a named anchor? If so, don't scroll.
+        if (url.contains("#")) {
+            //d("FeedViewer", url + "is a named anchor: not scrolling");
+            return;
+        }
+       String scrollkey = url_to_scrollpos_key(url);
         int scrollpos = mSharedPreferences.getInt(scrollkey, 0);
 
         // Scroll twice. First, try to scroll right now.
