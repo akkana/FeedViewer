@@ -16,6 +16,12 @@ import java.net.URISyntaxException;
 import static android.util.Log.d;
 
 public class FeedWebViewClient extends WebViewClient {
+    boolean mDontFollowLinks;
+
+    public FeedWebViewClient() {
+        mDontFollowLinks = false;
+    }
+
     /*
     @Override
     public void onPageFinished(WebView webView, final String url) {
@@ -31,6 +37,9 @@ public class FeedWebViewClient extends WebViewClient {
         d("FeedViewer", "shouldOverrideUrlLoading " + url);
         FeedWebView feedWebView = (FeedWebView)webView;
         feedWebView.saveScrollPos();
+
+        if (mDontFollowLinks)
+            return true;
 
         // Don't load if we're waiting for a longpress to time out:
         /*

@@ -56,7 +56,7 @@ public class FeedWebView extends WebView {
     // Paths from which to read feeds. mFeedDir plus maybe others.
     ArrayList<File> mBasePaths = new ArrayList<File>();
 
-    String mLastUrl = null;
+    FeedWebViewClient mWebViewClient;
 
     private SharedPreferences mSharedPreferences;
 
@@ -102,7 +102,8 @@ public class FeedWebView extends WebView {
         //mWebSettings.setSupportMultipleWindows(true);
         //mFontSize = mWebSettings.getDefaultFontSize();
 
-        setWebViewClient(new FeedWebViewClient());
+        mWebViewClient = new FeedWebViewClient();
+        setWebViewClient(mWebViewClient);
         // https://stackoverflow.com/a/22920457
         setWebChromeClient(new WebChromeClient() {
             @Override
@@ -356,9 +357,6 @@ I/ActivityManager(  818): Process com.shallowsky.FeedViewer (pid 32069) (adj 13)
 
         // Keep the font size the way the user asked:
         //mWebSettings.setDefaultFontSize(mFontSize);
-
-        mLastUrl = null;
-        // don't count on this null -- may get overridden. Use onFeedsPage().
     }
 
     //////////////////////////////////////////////////////////
@@ -580,7 +578,6 @@ I/ActivityManager(  818): Process com.shallowsky.FeedViewer (pid 32069) (adj 13)
 
     boolean onFeedsPage(String url) {
         if (nullURL(url)) {
-            d("FeedViewer", "On feeds page because mLastUrl is null");
             return true;
         }
         if (url.startsWith("file://") &&
@@ -591,7 +588,6 @@ I/ActivityManager(  818): Process com.shallowsky.FeedViewer (pid 32069) (adj 13)
     }
 
     boolean onFeedsPage() {
-        // return onFeedsPage(mLastUrl);
         d("FeedViewer", "getUrl is " + getUrl());
         return onFeedsPage(getUrl());
     }
@@ -799,9 +795,6 @@ I/ActivityManager(  818): Process com.shallowsky.FeedViewer (pid 32069) (adj 13)
                                     // the previous page and will end up
                                     // saving the position from the previous
                                     // page for the feeds list URL.
-                                    // So encode that into mLastUrl:
-                                    // XXX This didn't help.
-                                    // mLastUrl = null;
                                     loadFeedList();
 
                                     // Don't retain scroll position
@@ -952,15 +945,34 @@ I/ActivityManager(  818): Process com.shallowsky.FeedViewer (pid 32069) (adj 13)
 
             if (event.getRawY() < height * .2) {
                 pageUp(false);
+                inhibitLinks();
                 return true;
             }
             else if (event.getRawY() > height * .8) {
                 //Log.d(DEBUG_TAG, "Paging down");
                 pageDown(false);
+                inhibitLinks();
                 return true;
             }
             return false;
         }
 
+    }
+
+    // Temporarily inhibit link following.
+    // For a time after a tap-to-scroll, ignore any link-following for a URL
+    // that might have been under that tap. This is because there doesn't seem
+    // to be any way to tell a WebView "This event has been handled, don't act
+    // on it".
+    public void inhibitLinks() {
+        //d("FeedViewer", "Inhibiting links");
+        mWebViewClient.mDontFollowLinks = true;
+        postDelayed(new Runnable() {
+            @Override
+            public void run() {
+                mWebViewClient.mDontFollowLinks = false;
+                //d("FeedViewer", "reactivating links");
+            }
+        }, 500);
     }
 }
