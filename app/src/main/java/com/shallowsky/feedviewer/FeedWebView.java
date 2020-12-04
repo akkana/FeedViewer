@@ -873,7 +873,7 @@ I/ActivityManager(  818): Process com.shallowsky.FeedViewer (pid 32069) (adj 13)
     //
     /////////////// events
     //
-
+/*
     // Tapping in the corners of the screen scroll up or down.
     public boolean scrollIfInTargetZone(MotionEvent e) {
         DisplayMetrics metrics = new DisplayMetrics();
@@ -908,6 +908,7 @@ I/ActivityManager(  818): Process com.shallowsky.FeedViewer (pid 32069) (adj 13)
         // Else the tap was somewhere else: pass it along.
         return false;
     }
+ */
 
     @Override
     public boolean onTouchEvent(MotionEvent event) {
@@ -916,11 +917,8 @@ I/ActivityManager(  818): Process com.shallowsky.FeedViewer (pid 32069) (adj 13)
     }
 
     class MyGestureListener extends GestureDetector.SimpleOnGestureListener {
-        private static final String DEBUG_TAG = "FeedViewer";
-
         @Override
         public boolean onDown(MotionEvent event) {
-            //Log.d(DEBUG_TAG, "onDown: " + event.toString());
             return true;
         }
 
@@ -928,42 +926,68 @@ I/ActivityManager(  818): Process com.shallowsky.FeedViewer (pid 32069) (adj 13)
         @Override
         public boolean onFling(MotionEvent event1, MotionEvent event2,
                                float velocityX, float velocityY) {
-            Log.d(DEBUG_TAG, "onFling: " + event1.toString() + event2.toString());
+            Log.d("FeedViewer",
+                  "onFling: " + event1.toString() + event2.toString());
             return true;
         }
          */
 
+        final double LEFTEDGE  = .23;
+        final double RIGHTEDGE = .77;
+
         @Override
         public boolean onSingleTapUp(MotionEvent event) {
-            //Log.d(DEBUG_TAG, "onSingleTapUp: " + event.toString());
-
             DisplayMetrics metrics = new DisplayMetrics();
             mActivity.getWindowManager().getDefaultDisplay().getMetrics(metrics);
-            //int width = metrics.widthPixels;
-            int height = metrics.heightPixels;
-            //Log.d(DEBUG_TAG, "Y is " + event.getRawY() + ", height * .8 = " + height*.8);
+            double percentX = event.getRawX() / metrics.widthPixels;
+            double percentY = event.getRawY() / metrics.heightPixels;
 
-            if (event.getRawY() < height * .2) {
+            // HACK: In theory, returning true means we handled the event,
+            // don't pass it on. In practice, the web view follows
+            // links regardless of what onSingleTapUp returns
+            // (maybe it's going off a different event?
+            // I haven't found any documentation that explains it)
+            // so if we treat this tap as a scroll event, we also
+            // have to inhibit link following for a short time.
+
+            // d("FeedViewer", "percentX=" + percentX + ", percentY=" + percentY
+            //         + ", scrollY=" + getScrollY() + ", contentheight=" + getContentHeight());
+
+            // Ignore taps near the X center:
+            if (percentX > LEFTEDGE && percentX < RIGHTEDGE)
+                return false;
+
+            if (percentY < .2) {       // Near top
+                int scrollpos = getScrollY();
+                // Is the view scrolled to the top? Then ignore scroll-up taps.
+                if (scrollpos == 0)
+                    return false;
+
                 pageUp(false);
                 inhibitLinks();
                 return true;
             }
-            else if (event.getRawY() > height * .8) {
-                //Log.d(DEBUG_TAG, "Paging down");
+            else if (percentY >.8) {  // Near bottom
+                int scrollpos = getScrollY();
+
+                // Is the view scrolled down to the bottom? Then ignore.
+                // WebView.getContentHeight() is in some unspecified units that
+                // must be scaled with getScale.
+                int contentHeight = (int)(getContentHeight() * getScale());
+                if (scrollpos + metrics.heightPixels >= contentHeight)
+                    return false;
+
                 pageDown(false);
                 inhibitLinks();
                 return true;
             }
+
             return false;
         }
 
     }
 
-    // Temporarily inhibit link following.
-    // For a time after a tap-to-scroll, ignore any link-following for a URL
-    // that might have been under that tap. This is because there doesn't seem
-    // to be any way to tell a WebView "This event has been handled, don't act
-    // on it".
+    // Temporarily inhibit link following (see comment in onSingleTapUp).
     public void inhibitLinks() {
         //d("FeedViewer", "Inhibiting links");
         mWebViewClient.mDontFollowLinks = true;

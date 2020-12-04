@@ -17,8 +17,8 @@ but it will take a while to get rid of all the little annoyances.
 
 ### Important usability fixes
 
-- Taps below or above WebView shouldn't cause scrolling (maybe fixed)
-- For taps that cause scrolling, don't follow links. (maybe fixed)
+- Taps at bottom or top: exclude center, exclude when at page bottom or top
+  (maybe fixed)
 - Set chrome colors, especially for menu: the default is unreadable
   dark grey on black under the dark theme.
 - Space buttons out, don't right-justify them
