@@ -22,15 +22,8 @@ public class FeedWebViewClient extends WebViewClient {
         mDontFollowLinks = false;
     }
 
-    /*
-    @Override
-    public void onPageFinished(WebView webView, final String url) {
-        // d("FeedViewer", "finished loading " + url);
-        // try to restore scroll position
-        FeedWebView feedWebView = (FeedWebView)webView;
-        feedWebView.restoreScroll();
-    }
-     */
+    // Don't override onPageFinished; do that instead
+    // from a separate WebChromeClient
 
     @Override
     public boolean shouldOverrideUrlLoading(WebView webView, String url) {

@@ -109,8 +109,7 @@ public class FeedWebView extends WebView {
             @Override
             public void onProgressChanged(WebView view, int progress) {
                 if (view.getProgress() == 100) {
-                    // I save Y w/in Bundle so orientation changes [in addition to
-                    // initial loads] will reposition to last location
+                    // When finished loading, reposition to last location
                     d("FeedViewer", "restoreScroll from onProgressChanged");
                     restoreScroll();
                 }
@@ -120,18 +119,12 @@ public class FeedWebView extends WebView {
         // https://developer.android.com/training/gestures/detector
         mDetector = new GestureDetectorCompat(mActivity.getApplicationContext(), new MyGestureListener());
 
-        // XXX This should actually restore whatever feed it was previously on.
-        loadFeedList();
+        restoreLastPage();
     }
 
     //
     // Functions called from the activity toolbar or menu:
     //
-    public void settings() {
-        d("FeedViewer", "Settings not yet implented");
-        Toast.makeText(mActivity, "Settings not yet implemented",
-                Toast.LENGTH_LONG).show();
-    }
 
     /* If the FeedViewer activity is killed (or crashes) while a
      * FeedFetcher AsyncTask is running, we can get an error like:
@@ -218,10 +211,14 @@ I/ActivityManager(  818): Process com.shallowsky.FeedViewer (pid 32069) (adj 13)
         editor.putInt(scrollkey, scrollpos);
         editor.putString("url", url);
         editor.commit();
-        d("FeedViewer", "Saved scroll position " + scrollpos + " for " + scrollkey);
-        printPreferences();
+        // d("FeedViewer", "Saved scroll position " + scrollpos
+        //   + " for " + scrollkey);
+        // printPreferences();
     }
 
+    // Restore the scroll position from preferences.
+    // This is typically called on create and from
+    // WebChromeClient::onProgressChanged when a page load finishes.
     public void restoreScroll() {
         String url = getUrl();
         // Is it a named anchor? If so, don't scroll.
@@ -261,6 +258,17 @@ I/ActivityManager(  818): Process com.shallowsky.FeedViewer (pid 32069) (adj 13)
     }
 
     ////// End settings
+
+    //
+    // Restore the last page from preferences.
+    //
+    public void restoreLastPage() {
+        String url = mSharedPreferences.getString("url", null);
+        if (nullURL(url))
+            loadFeedList();
+        else
+            loadUrl(url);
+    }
 
     //
     // Display the top-level page, listing all feeds present.
@@ -396,8 +404,11 @@ I/ActivityManager(  818): Process com.shallowsky.FeedViewer (pid 32069) (adj 13)
         else
             showFeedFetcherProgress();
 
-        d("FeedViewer", "Finished fetching, ready to load feeds list");
-        loadFeedList();
+        // If currently showing the feeds page, refresh it
+        // so it shows the newly loaded feeds.
+        if (! onFeedsPage())
+            loadFeedList();
+            // When this loads, the scroll position should be reset.
     }
 
     /********** Prompt for feed server URL dialog ******/
@@ -604,7 +615,6 @@ I/ActivityManager(  818): Process com.shallowsky.FeedViewer (pid 32069) (adj 13)
 
         try {
             if (onFeedsPage(urlstring)) {  // already on a generated page, probably feeds
-                mActivity.showTextMessage("Already on feeds");
                 d("FeedViewer", "Already on feeds page");
                 return;
             }
@@ -656,12 +666,11 @@ I/ActivityManager(  818): Process com.shallowsky.FeedViewer (pid 32069) (adj 13)
                 tableOfContents();
             } else {
                 // Don't know where we are! Shouldn't happen, but probably does.
-                mActivity.showTextMessage("Can't go back! " + uri);
+                d("FeedViewer", "Can't go back! " + uri);
                 return;
             }
         } catch (Exception e) {
-            Log.d("FeedViewer", "Ouch");
-            mActivity.showTextMessage("Can't go back! " + getUrl());
+            Log.d("FeedViewer", "Ouch! " + getUrl());
             Log.d("FeedViewer", "Exception was: " + e.toString());
         }
 
@@ -683,8 +692,6 @@ I/ActivityManager(  818): Process com.shallowsky.FeedViewer (pid 32069) (adj 13)
     // Generate the Table of Contents
     //
     public void tableOfContents() {
-        // Toast.makeText(mActivity, "Table of Contents is not yet implemented",
-        //                Toast.LENGTH_LONG).show();
         if (onFeedsPage())
             return;
 
@@ -699,9 +706,9 @@ I/ActivityManager(  818): Process com.shallowsky.FeedViewer (pid 32069) (adj 13)
             loadUrl("file://" + feeddir.getAbsolutePath()
                     + File.separator + "index.html");
         } catch (URISyntaxException e) {
-            mActivity.showTextMessage("ToC: URI Syntax: URL was " + getUrl());
+            d("FeedViewer", "ToC: URI Syntax: URL was " + getUrl());
         } catch (NullPointerException e) {
-            mActivity.showTextMessage("NullPointerException: URL was " + getUrl());
+            d("FeedViewer", "NullPointerException: URL was " + getUrl());
         }
     }
 
@@ -712,7 +719,7 @@ I/ActivityManager(  818): Process com.shallowsky.FeedViewer (pid 32069) (adj 13)
             for (int i = 0; i < children.length; i++) {
                 boolean success = deleteDir(new File(dir, children[i]));
                 if (!success) {
-                    mActivity.showTextMessage("Couldn't delete");
+                    d("FeedViewer", "Couldn't delete");
                     return false;
                 }
             }
@@ -726,9 +733,6 @@ I/ActivityManager(  818): Process com.shallowsky.FeedViewer (pid 32069) (adj 13)
      */
     public void maybeDelete() {
         try {
-            // Clear out the message area
-            mActivity.showTextMessage("");
-
             /*
              * We're reading a file in feeds/dayname/feedname/filename.html
              * or possibly the directory itself, feeds/dayname/feedname/
@@ -838,7 +842,6 @@ I/ActivityManager(  818): Process com.shallowsky.FeedViewer (pid 32069) (adj 13)
                         new DialogInterface.OnClickListener() {
                             public void onClick(DialogInterface dialog,
                                                 int id) {
-                                mActivity.showTextMessage("Browsing " + url);
                                 Intent browserIntent
                                         = new Intent(Intent.ACTION_VIEW,
                                         Uri.parse(url));

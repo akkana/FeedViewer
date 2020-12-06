@@ -26,14 +26,13 @@ import android.view.MenuItem;
 import android.view.WindowManager;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
-import android.widget.TextView;
+import android.widget.Toast;
 
 import static android.util.Log.*;
 
 public class MainActivity extends AppCompatActivity {
 
     FeedWebView mWebView;
-    TextView mStatusBar;
     int mBrightness;
     long mScrollLock;
     private GestureDetector mDetector;
@@ -46,26 +45,19 @@ public class MainActivity extends AppCompatActivity {
         setSupportActionBar(toolbar);
         getSupportActionBar().setDisplayShowTitleEnabled(false);
 
-        mStatusBar = (TextView)findViewById(R.id.statusbar);
         mWebView = (FeedWebView)findViewById(R.id.webview);
         mWebView.setActivity(this);
-
-        // This is supposed to hide the navigation bar at the bottom
-        // of the screen, but it comes back whenever a user taps near
-        // the bottom, which makes it super confusing.
-        // Better to just put up with losing the extra couple lines.
-        /*
-        View decorView = getWindow().getDecorView();
-        // Hide both the navigation bar and the status bar.
-        int uiOptions = View.SYSTEM_UI_FLAG_HIDE_NAVIGATION;
-        decorView.setSystemUiVisibility(uiOptions);
-         */
-
-        //mStatusBar.setBackgroundColor(0x00334444);
-        //mStatusBar.setCursorVisible(false);
-        //mStatusBar.setTextColor(0xffffffff);
-        showTextMessage(":-)");
     }
+
+    // onSaveInstanceState() is called whenever the app is going to go away,
+    // onStop, or on configuration (like orientation) change, etc.
+    // Save prefs.
+    @Override
+    public void onSaveInstanceState(Bundle outState) {
+        mWebView.saveScrollPos();
+        super.onSaveInstanceState(outState);
+    }
+
     @Override
     public void onDestroy() {
         mWebView.cleanUp();
@@ -147,7 +139,6 @@ public class MainActivity extends AppCompatActivity {
 
     @Override
     public boolean onKeyDown(int keyCode, KeyEvent event) {
-        showTextMessage("");
         if (keyCode == KeyEvent.KEYCODE_BACK) {
             mWebView.goBack();
             return true;
@@ -156,8 +147,8 @@ public class MainActivity extends AppCompatActivity {
         return super.onKeyDown(keyCode, event);
     }
 
-
     public void showTextMessage(String msg) {
-        mStatusBar.setText(msg);
+        Toast.makeText(this, "Settings not yet implemented",
+                Toast.LENGTH_LONG).show();
     }
 }

@@ -17,18 +17,15 @@ but it will take a while to get rid of all the little annoyances.
 
 ### Important usability fixes
 
-- Taps below or above WebView shouldn't cause scrolling (maybe fixed)
-- For taps that cause scrolling, don't follow links. (maybe fixed)
 - Set chrome colors, especially for menu: the default is unreadable
   dark grey on black under the dark theme.
-- Space buttons out, don't right-justify them
 
 ### Nice to have
 
 - Fix setting brightness by dragging down the left side.
 - Space out buttons across toolbar instead of right justification
-- Allow font resizing
-- Settings, e.g. change font size or download URL
+- Allow font size changing
+- Settings menu
 - Pinch zoom
 
 
