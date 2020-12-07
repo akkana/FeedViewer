@@ -148,7 +148,6 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public void showTextMessage(String msg) {
-        Toast.makeText(this, "Settings not yet implemented",
-                Toast.LENGTH_LONG).show();
+        Toast.makeText(this, msg, Toast.LENGTH_LONG).show();
     }
 }
