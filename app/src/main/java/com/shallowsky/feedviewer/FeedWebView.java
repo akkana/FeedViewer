@@ -66,7 +66,7 @@ public class FeedWebView extends WebView {
     // The server from which we'll fetch the feeds
     String mFeedServer = null;
 
-    WebSettings mWebSettings; // Settings for the WebView, e.g. font size, allow file access.
+    WebSettings mWebSettings; // Settings for the WebView, e.g. font size
 
     private GestureDetectorCompat mDetector;
 
@@ -80,11 +80,13 @@ public class FeedWebView extends WebView {
         super(context, attrs);
     }
 
-    // Java/AndroidStudio doesn't seem to allow having constructors with different
-    // arguments from the base class, and/or I can't figure out how it decides what
-    // args to pass to something constructed from XML. So let's just pass the
-    // activity separately. This should be called right at the beginning of the activity,
-    // and can be used for constructor-time things that need doing.
+    // Java/AndroidStudio doesn't seem to allow having constructors
+    // with different arguments from the base class, and/or I can't
+    // figure out how it decides what args to pass to something
+    // constructed from XML. So let's just pass the activity
+    // separately. This should be called right at the beginning of the
+    // activity, and can be used for constructor-time things that need
+    // doing.
 
     public void setActivity(Activity activity) {
         mActivity = (MainActivity) activity;
@@ -96,10 +98,10 @@ public class FeedWebView extends WebView {
         mWebSettings = getSettings();
         mWebSettings.setJavaScriptEnabled(false);
         mWebSettings.setAllowFileAccess(true);
-        // One person suggests this might help in getting shouldOverrideUrlLoading to work,
-        // but it doesn't help:
-        //mWebSettings.setSupportMultipleWindows(true);
-        //mFontSize = mWebSettings.getDefaultFontSize();
+
+        // Enable pinch-zoom
+        mWebSettings.setBuiltInZoomControls(true);
+        mWebSettings.setDisplayZoomControls(false);
 
         mWebViewClient = new FeedWebViewClient();
         setWebViewClient(mWebViewClient);
