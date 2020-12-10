@@ -833,7 +833,6 @@ I/ActivityManager(  818): Process com.shallowsky.FeedViewer (pid 32069) (adj 13)
                         new DialogInterface.OnClickListener() {
                             public void onClick(DialogInterface dialog,
                                                 int id) {
-                                mActivity.showTextMessage("Saving " + url);
                                 saveUrlForLater(url);
                             }
                         })
@@ -866,7 +865,7 @@ I/ActivityManager(  818): Process com.shallowsky.FeedViewer (pid 32069) (adj 13)
             //fos = openFileOutput("saved_urls", Context.MODE_APPEND);
             fos.write((url + "\n").getBytes());
             fos.close();
-            mActivity.showTextMessage("Saved");
+            mActivity.showTextMessage("Saved " + url);
         } catch (Exception e) {
             mActivity.showTextMessage("Couldn't save URL to " + savedUrlPath);
         }

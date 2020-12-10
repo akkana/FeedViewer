@@ -135,7 +135,6 @@ public class MainActivity extends AppCompatActivity {
         // Save the new brightness:
         //saveStateInPreferences();
     }
-    /************** Events **************/
 
     @Override
     public boolean onKeyDown(int keyCode, KeyEvent event) {
