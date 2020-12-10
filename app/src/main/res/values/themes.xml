@@ -1,4 +1,10 @@
 <resources xmlns:tools="http://schemas.android.com/tools">
+
+    <!-- XXX This file comes from Android Studio and seems to have
+         no effect whatsoever on the actual colors of the app.
+    -->
+
+
     <!-- Base application theme. -->
     <style name="Theme.FeedViewer" parent="Theme.MaterialComponents.DayNight.DarkActionBar">
         <!-- Primary brand color. -->
@@ -21,5 +27,9 @@
 
     <style name="Theme.FeedViewer.AppBarOverlay" parent="ThemeOverlay.AppCompat.Dark.ActionBar" />
 
-    <style name="Theme.FeedViewer.PopupOverlay" parent="ThemeOverlay.AppCompat.Light" />
+    <style name="PopupMenuStyle" parent="Theme.AppCompat.Light">
+        <item name="android:textColor">@color/black</item>
+        <item name="android:background">@android:color/white</item>
+        <!-- <item name="android:colorBackground">@color/white</item> -->
+    </style>
 </resources>
