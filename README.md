@@ -20,9 +20,13 @@ can fetch daily feeds, see the
 
 ## Wishlist
 
-- Space out buttons across toolbar instead of right justification
 - Allow font size changing
 - Settings menu to include font sizing
+
+### Low priority wishlist
+
+- Space out buttons across toolbar instead of right justification
+- Multiple style sheets, e.g. night and day
 - Set brightness by dragging down the left side.
 
 

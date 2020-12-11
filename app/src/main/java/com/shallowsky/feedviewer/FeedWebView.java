@@ -374,28 +374,6 @@ I/ActivityManager(  818): Process com.shallowsky.FeedViewer (pid 32069) (adj 13)
 
     public void fetchFeeds() {
         setBackgroundColor(0xffbbbbff);
-        d("FeedViewer", "Fetch Feeds button");
-
-        // Let's just see if we can actually write to mFeedDir:
-        /*
-        Date curDate = new Date();
-        SimpleDateFormat format = new SimpleDateFormat("MM-dd-EEE");
-        String todayStr = format.format(curDate);
-        String datedir = mFeedDir + "/" + todayStr + "/";
-        File dd = new File(datedir);
-        StringBuilder resultspage = new StringBuilder("<html><body><h1>Fetch</h1><p>");
-        if (dd.mkdirs()) {
-            d("FeedViewer", "Created new directory: " + datedir);
-            resultspage.append("Created directory ");
-        } else {
-            d("FeedViewer", "Couldn't create directory: " + datedir);
-            resultspage.append("Couldn't create directory ");
-        }
-        resultspage.append(datedir);
-        resultspage.append("</body></html>");
-        loadDataWithBaseURL("file://" + mFeedDir, resultspage.toString(),
-                                     "text/html","utf-8", null);
-         */
 
         if (mFeedServer == null)
             mFeedServer = mSharedPreferences.getString("feed_server",
@@ -404,12 +382,6 @@ I/ActivityManager(  818): Process com.shallowsky.FeedViewer (pid 32069) (adj 13)
             promptForFeedServer();
         else
             showFeedFetcherProgress();
-
-        // If currently showing the feeds page, refresh it
-        // so it shows the newly loaded feeds.
-        if (! onFeedsPage())
-            loadFeedList();
-            // When this loads, the scroll position should be reset.
     }
 
     /********** Prompt for feed server URL dialog ******/
@@ -424,7 +396,7 @@ I/ActivityManager(  818): Process com.shallowsky.FeedViewer (pid 32069) (adj 13)
                 = new AlertDialog.Builder(mActivity);
         alertDialogBuilder.setView(promptView);
 
-        final EditText userInput = (EditText) promptView
+        final EditText userInput = (EditText)promptView
                 .findViewById(R.id.editTextDialogUserInput);
 
         if (mFeedServer != null)
@@ -565,6 +537,11 @@ I/ActivityManager(  818): Process com.shallowsky.FeedViewer (pid 32069) (adj 13)
         mFeedFetcher.stop();
         mFeedFetcher = null;
         mFeedFetcherDialog.dismiss();
+
+        // If currently displaying the feeds page, it will have
+        // to be reloaded to show the newly-fetched entries.
+        if (onFeedsPage())
+            loadFeedList();
     }
 
     //////////// Done with feed fetching
