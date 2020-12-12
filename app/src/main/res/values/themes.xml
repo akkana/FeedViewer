@@ -32,4 +32,23 @@
         <item name="android:background">@android:color/white</item>
         <!-- <item name="android:colorBackground">@color/white</item> -->
     </style>
+
+    <!-- colorOnPrimary will be used for button text in AlertDialog,
+         whether we like it or not. It's not clear how to override that.
+         So set a dark background so the light text will show up.
+      -->
+    <style name="AlertDialogCustom" parent="Theme.AppCompat.Light.Dialog.Alert">
+
+        <!-- background -->
+        <item name="android:background">#005555</item>
+
+        <!-- title and text -->
+        <item name="android:textColorPrimary">@color/white</item>
+
+        <!-- Not used for anything I can see
+        <item name="android:textColor">#FFFF00</item>
+        <item name="colorAccent">#FFFF00</item>
+          -->
+    </style>
+
 </resources>

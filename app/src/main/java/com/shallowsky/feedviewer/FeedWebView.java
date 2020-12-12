@@ -393,7 +393,7 @@ I/ActivityManager(  818): Process com.shallowsky.FeedViewer (pid 32069) (adj 13)
         View promptView = li.inflate(R.layout.prompt, null);
 
         AlertDialog.Builder alertDialogBuilder
-                = new AlertDialog.Builder(mActivity);
+                = new AlertDialog.Builder(mActivity, R.style.AlertDialogCustom);
         alertDialogBuilder.setView(promptView);
 
         final EditText userInput = (EditText)promptView
@@ -728,7 +728,8 @@ I/ActivityManager(  818): Process com.shallowsky.FeedViewer (pid 32069) (adj 13)
             final String dayname = feeddir.getParentFile().getName();
 
             // Pop up a question dialog:
-            AlertDialog.Builder builder = new AlertDialog.Builder(mActivity);
+            AlertDialog.Builder builder
+                = new AlertDialog.Builder(mActivity, R.style.AlertDialogCustom);
             builder.setMessage("Delete" + dayname + " " + feedname + "?")
                     .setCancelable(false)
                     .setPositiveButton("Delete",
@@ -805,7 +806,8 @@ I/ActivityManager(  818): Process com.shallowsky.FeedViewer (pid 32069) (adj 13)
 
     public void handleExternalLink(final String url) {
         // Pop up a dialog to ask what to do:
-        AlertDialog.Builder builder = new AlertDialog.Builder(mActivity);
+        AlertDialog.Builder builder
+            = new AlertDialog.Builder(mActivity, R.style.AlertDialogCustom);
         builder.setMessage("Action for external link " + url + " ?")
                 .setCancelable(false)
                 .setNeutralButton("Save",

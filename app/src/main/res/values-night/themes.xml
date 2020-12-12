@@ -1,21 +1,65 @@
 <resources xmlns:tools="http://schemas.android.com/tools">
     <!-- Base application theme. -->
     <style name="Theme.FeedViewer" parent="Theme.MaterialComponents.DayNight.DarkActionBar">
-        <!-- Primary brand color. -->
-        <item name="colorPrimary">@color/purple_200</item>
-        <item name="colorPrimaryVariant">@color/purple_700</item>
-        <item name="colorOnPrimary">@color/black</item>
-        <!-- Secondary brand color. -->
+        <!-- Primary brand color. App top bar.
+             But also, unfortunately, used for the buttons in AlertDialog,
+             which has a dark background that's seemingly impossible
+             to change. So if you want to have a dark app bar,
+             that's just too bad, it means you get unreadable
+             dialog buttons.
+             Attempts at setting a custom theme via ContextThemeWrapper
+             have been futile.
+         -->
+        <item name="colorPrimary">#004444</item>
+
+        <!-- Used for the statusbar above the app top bar. -->
+        <item name="colorPrimaryVariant">#003333</item>
+
+        <!-- This is supposedly the foreground (text) color according to
+             https://androidexample365.com/a-project-to-demonstrate-the-latest-material-design-principles-with-simple-examples/
+             but it's not true, when this is set to @color/black
+             the top bar shows white text. However, it is used
+             for foreground color on custom alert dialogs.
+        -->
+        <item name="colorOnPrimary">#DDFF88</item>
+
+        <!-- Secondary brand color. Probably not used for anything in this app.
         <item name="colorSecondary">@color/teal_200</item>
         <item name="colorSecondaryVariant">@color/teal_200</item>
         <item name="colorOnSecondary">@color/black</item>
+        -->
+
         <!-- Status bar color. -->
         <item name="android:statusBarColor" tools:targetApi="l">?attr/colorPrimaryVariant</item>
-        <!-- Customize your theme here. -->
+
     </style>
+
+    <!-- Popup menu. -->
     <style name="PopupMenuStyle" parent="Theme.AppCompat.Light">
         <item name="android:textColor">@color/white</item>
-        <item name="android:background">@android:color/black</item>
+        <item name="android:background">#003333</item>
         <!-- <item name="android:colorBackground">@color/black</item> -->
     </style>
+
+    <!-- By default, AlertDialogs in dark theme have a very dark grey
+         background but use colorPrimary colorPrimary as the button color,
+         so if you want a dark app bar, you'll have unreadable buttons.
+         Defining a custom style here somehow makes alert dialogs
+         use colorOnPrimary instead of colorPrimary even though
+         that's not specified in the custom style. Go figure.
+      -->
+    <style name="AlertDialogCustom" parent="Theme.AppCompat.Light.Dialog.Alert">
+
+        <!-- background -->
+        <item name="android:background">#003333</item>
+
+        <!-- title and text -->
+        <item name="android:textColorPrimary">@color/white</item>
+
+        <!-- Not used for anything obvious
+        <item name="colorAccent">#00FF00</item>
+        <item name="android:textColor">#FF0000</item>
+          -->
+    </style>
+
 </resources>
