@@ -10,7 +10,7 @@
              Attempts at setting a custom theme via ContextThemeWrapper
              have been futile.
          -->
-        <item name="colorPrimary">#004444</item>
+        <item name="colorPrimary">#006060</item>
 
         <!-- Used for the statusbar above the app top bar. -->
         <item name="colorPrimaryVariant">#003333</item>
