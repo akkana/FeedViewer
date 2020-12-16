@@ -20,11 +20,14 @@ can fetch daily feeds, see the
 
 ## Wishlist
 
+- Way to keep a directory of saved articles
+
 - Toolbar buttons spaced out instead of right-justified
   (this may have something to do with the Toolbar's automatically
   created ActionMenuView, which isn't in the layout files so there's
   no obvious way to style it)
-- Less toolbar vertical padding
+- Less toolbar vertical padding -- probably not possible, Android standard
+
 - Allow font size changing
 - Settings menu to include font sizing
 

@@ -54,19 +54,19 @@ public class MainActivity extends AppCompatActivity {
     // Save prefs.
     @Override
     public void onSaveInstanceState(Bundle outState) {
-        mWebView.saveScrollPos();
+        mWebView.saveState();
         super.onSaveInstanceState(outState);
     }
 
     @Override
     public void onDestroy() {
-        mWebView.cleanUp();
+        mWebView.saveState();
         super.onDestroy();
     }
 
     @Override
     public void onPause() {
-        mWebView.cleanUp();
+        mWebView.saveState();
         super.onPause();
     }
 

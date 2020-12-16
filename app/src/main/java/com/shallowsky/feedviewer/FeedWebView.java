@@ -80,14 +80,15 @@ public class FeedWebView extends WebView {
         super(context, attrs);
     }
 
+    //
     // Java/AndroidStudio doesn't seem to allow having constructors
     // with different arguments from the base class, and/or I can't
     // figure out how it decides what args to pass to something
     // constructed from XML. So let's just pass the activity
     // separately. This should be called right at the beginning of the
-    // activity, and can be used for constructor-time things that need
-    // doing.
-
+    // activity, and can be used for initializing anything that would
+    // otherwise be done in a constructor.
+    //
     public void setActivity(Activity activity) {
         mActivity = (MainActivity) activity;
         mFeedDir = activity.getExternalFilesDir(null);
@@ -118,42 +119,30 @@ public class FeedWebView extends WebView {
         });
 
         // https://developer.android.com/training/gestures/detector
-        mDetector = new GestureDetectorCompat(mActivity.getApplicationContext(), new MyGestureListener());
+        mDetector = new GestureDetectorCompat(mActivity.getApplicationContext(),
+                                              new MyGestureListener());
 
         restoreLastPage();
     }
 
     //
-    // Functions called from the activity toolbar or menu:
+    // If the activity is destroyed, be sure to stop any running feedFetcher.
+    // Probably best to do it on pause too.
     //
-
-    /* If the FeedViewer activity is killed (or crashes) while a
-     * FeedFetcher AsyncTask is running, we can get an error like:
-  android.view.WindowLeaked: Activity com.shallowsky.FeedViewer.FeedViewer has leaked window com.android.internal.policy.impl.PhoneWindow$DecorView{42b38da0 V.E..... R.....ID 0,0-320,321} that was originally added here
-E/WindowManager(32069):         at com.shallowsky.FeedViewer.FeedViewer.showFeedFetcherProgress(FeedViewer.java:1186)
-E/WindowManager(32069):         at com.shallowsky.FeedViewer.FeedViewer.onOptionsItemSelected(FeedViewer.java:547)
-I/ActivityManager(  818): Process com.shallowsky.FeedViewer (pid 32069) (adj 13) has died.
-     * The best way to fix this isn't entirely obvious:
-     * here, we call stop() on any existing FeedFetcher,
-     * which will call cancel() on any fetcher task that might be running.
-     * However, it may take a while for that cancel() to work
-     * (especially if it's waiting on an HTTP download)
-     * so I wonder if Android might still complain about the leak.
-     * Also, are there other places this leak can happen
-     * that might not be covered by the activity's onDestroy() ?
-     */
-    public void cleanUp() {
+    public void stopFeedFetcher() {
         if (mFeedFetcher != null)
             mFeedFetcher.stop();
-
-        // onDestroy() is never supposed to be called without onPause()
-        // being called first; but some people say it happens, and
-        // clearly we're sometimes getting killed without prefs being
-        // saved, so try saving them again here:
-        saveScrollPos();
     }
 
-    // Clean up any scroll preferences for deletedfiles/directories.
+    //
+    // Save any state that needs to be saved on pause or destroy,
+    // or at any other time the webview might forget its contents.
+    //
+    public void saveState() {
+        savePagePos();
+    }
+
+    // Clean up any scroll preferences for deleted files/directories.
     // That includes not just what we just immediately deleted, but anything
     // that was deleted previously and somehow didn't get its pref removed.
     private void cleanUpScrollPrefs() {
@@ -176,8 +165,9 @@ I/ActivityManager(  818): Process com.shallowsky.FeedViewer (pid 32069) (adj 13)
         // printPreferences();
     }
 
-    //////////////////////////
-    // Settings and preferences
+    ////////////////////////////
+    // Settings and preferences.
+    // There aren't really any now except the feed server.
     public void editSettings() {
         promptForFeedServer();
     }
@@ -204,7 +194,7 @@ I/ActivityManager(  818): Process com.shallowsky.FeedViewer (pid 32069) (adj 13)
         return "scroll_" + url;
     }
 
-    public void saveScrollPos() {
+    public void savePagePos() {
         SharedPreferences.Editor editor = mSharedPreferences.edit();
         String url = getUrl();
         String scrollkey = url_to_scrollpos_key(url);
@@ -363,9 +353,6 @@ I/ActivityManager(  818): Process com.shallowsky.FeedViewer (pid 32069) (adj 13)
 
         loadDataWithBaseURL("file://" + mFeedDir, resultspage.toString(),
                 "text/html", "utf-8", null);
-
-        // Keep the font size the way the user asked:
-        //mWebSettings.setDefaultFontSize(mFontSize);
     }
 
     //////////////////////////////////////////////////////////
@@ -376,15 +363,16 @@ I/ActivityManager(  818): Process com.shallowsky.FeedViewer (pid 32069) (adj 13)
         setBackgroundColor(0xffbbbbff);
 
         if (mFeedServer == null)
-            mFeedServer = mSharedPreferences.getString("feed_server",
-                    null);
+            mFeedServer = mSharedPreferences.getString("feed_server", null);
         if (mFeedServer == null)
             promptForFeedServer();
         else
             showFeedFetcherProgress();
     }
 
-    /********** Prompt for feed server URL dialog ******/
+    //
+    // Prompt dialog for feed server URL. Eventually might have more prefs.
+    //
     private void promptForFeedServer() {
         Log.d("FeedViewer", "No feed server assigned");
 
@@ -421,7 +409,9 @@ I/ActivityManager(  818): Process com.shallowsky.FeedViewer (pid 32069) (adj 13)
                                                     + mFeedServer);
                                     printPreferences();
 
-                                    showFeedFetcherProgress();
+                                    // Don't fetch feeds just because the
+                                    // user changed the server URL.
+                                    //showFeedFetcherProgress();
                                 }
                             }
                         })
@@ -440,11 +430,11 @@ I/ActivityManager(  818): Process com.shallowsky.FeedViewer (pid 32069) (adj 13)
         alertDialog.show();
     }
 
-    /********** FeedFetcher dialog ******/
-    /* This is called from initiateFeedFetch if we already have a
-     * mFeedServer URL set in preferences, or else from the
-     * promptForFeedServer dialog after setting it the first time.
-     */
+    //
+    // Bring up the feed fetcher progress dialog;
+    // start fetching a feet, if there isn't one going already.
+    // Called from the Fetch Feeds menu item if there's a feed server set.
+    //
     private void showFeedFetcherProgress() {
 
         Button imgToggle;
@@ -581,18 +571,19 @@ I/ActivityManager(  818): Process com.shallowsky.FeedViewer (pid 32069) (adj 13)
         return onFeedsPage(getUrl());
     }
 
-    /*
-     * Go back to the previous page, or re-generate the feeds list if needed.
-     */
+    //
+    // Go back to the previous page, or re-generate the feeds list if needed.
+    //
     @Override
     public void goBack() {
         // Save scroll position in the current document, without a delay:
-        saveScrollPos();
+        savePagePos();
 
         String urlstring = getUrl();
 
         try {
-            if (onFeedsPage(urlstring)) {  // already on a generated page, probably feeds
+            if (onFeedsPage(urlstring)) {
+                // already on a generated page, probably feeds
                 d("FeedViewer", "Already on feeds page");
                 return;
             }
@@ -658,23 +649,21 @@ I/ActivityManager(  818): Process com.shallowsky.FeedViewer (pid 32069) (adj 13)
     }
 
     public void goForward() {
-        saveScrollPos();
+        savePagePos();
         super.goForward();
-        //mWebSettings.setDefaultFontSize(mFontSize);
-        //updateBatteryLevel();
     }
 
     //////////// end page navigation
 
     //
-    // Generate the Table of Contents
+    // Generate the Table of Contents for the current feed
     //
     public void tableOfContents() {
         if (onFeedsPage())
             return;
 
         // Save scroll position in the current document, without delay:
-        saveScrollPos();
+        savePagePos();
 
         // In theory, we're already in the right place, so just load relative
         // index.html -- but nope, that doesn't work.
@@ -690,7 +679,9 @@ I/ActivityManager(  818): Process com.shallowsky.FeedViewer (pid 32069) (adj 13)
         }
     }
 
+    //
     // Recursively delete a directory.
+    //
     boolean deleteDir(File dir) {
         if (dir.isDirectory()) {
             String[] children = dir.list();
@@ -706,17 +697,55 @@ I/ActivityManager(  818): Process com.shallowsky.FeedViewer (pid 32069) (adj 13)
         return dir.delete();
     }
 
-    /*
-     * Confirm whether to delete the current feed, then do so.
-     */
+    //
+    // Actually delete a feed, including the whole directory
+    // and any related prefs.
+    //
+    public void deleteFeedDir(File feeddir) {
+        Log.d("FeedViewer", "deleting " + feeddir.getAbsolutePath());
+
+        deleteDir(feeddir);
+
+        // If this was the last feed and the parent (daydir) is now
+        // empty, delete it too. Don't want to do this in deleteDir()
+        // since it would have to check on every recursion.
+        File parent = feeddir.getParentFile();
+        File[] children = parent.listFiles();
+        if (children.length == 0)
+            parent.delete();
+        else {
+            // There might still be files there, like LOG, but as long
+            // as there are no more subdirectories, it's time to delete.
+            Boolean hasChildDirs = false;
+            for (int i = 0; i < children.length; ++i)
+                if (children[i].isDirectory()) {
+                    hasChildDirs = true;
+                    break;
+                }
+            if (!hasChildDirs) {
+                deleteDir(parent);
+            }
+        }
+
+        // Load the feeds list before cleaning up scroll prefs.
+        // Do this before cleaning up the scroll prefs, because
+        // the first thing loadFeedList does is save position on the
+        // old page, which we just deleted.
+        loadFeedList();
+
+        // Don't retain scroll position for deleted pages.
+        cleanUpScrollPrefs();
+    }
+
+    //
+    // Confirm whether to delete the current feed, then do so.
+    //
     public void maybeDelete() {
         try {
-            /*
-             * We're reading a file in feeds/dayname/feedname/filename.html
-             * or possibly the directory itself, feeds/dayname/feedname/
-             * and what we want to delete is the dir feeds/dayname/feedname
-             * along with everything inside it.
-             */
+            // We're reading a file in feeds/dayname/feedname/filename.html
+            // or possibly the directory itself, feeds/dayname/feedname/
+            // and what we want to delete is the dir feeds/dayname/feedname
+            // along with everything inside it.
             final File feeddir;
             final File curfile = new File(getPathForURI());
 
@@ -736,53 +765,7 @@ I/ActivityManager(  818): Process com.shallowsky.FeedViewer (pid 32069) (adj 13)
                             new DialogInterface.OnClickListener() {
                                 public void onClick(DialogInterface dialog,
                                                     int id) {
-                                    // mBlockSavingScrollPos = true;
-                                    Log.d("FeedViewer",
-                                            "deleting "
-                                                    + feeddir.getAbsolutePath());
-
-                                    deleteDir(feeddir);
-
-                                    // If this was the last feed and
-                                    // the parent (daydir) is now
-                                    // empty, delete it too. Don't
-                                    // want to do this in deleteDir()
-                                    // since it would have to check on
-                                    // every recursion.
-                                    File parent = feeddir.getParentFile();
-                                    File[] children = parent.listFiles();
-                                    if (children.length == 0)
-                                        parent.delete();
-                                    else {
-                                        // There might still be files
-                                        // there, like LOG, but as
-                                        // long as there are no more
-                                        // subdirectories, it's time
-                                        // to delete.
-                                        Boolean hasChildDirs = false;
-                                        for (int i = 0; i < children.length; ++i)
-                                            if (children[i].isDirectory()) {
-                                                hasChildDirs = true;
-                                                break;
-                                            }
-                                        if (!hasChildDirs) {
-                                            deleteDir(parent);
-                                        }
-                                    }
-
-                                    // Load the feeds list before cleaning
-                                    // up scroll prefs.
-                                    // But the first thing loadFeedList does
-                                    // is save position on the previous page,
-                                    // which we can't do since we just deleted
-                                    // the previous page and will end up
-                                    // saving the position from the previous
-                                    // page for the feeds list URL.
-                                    loadFeedList();
-
-                                    // Don't retain scroll position
-                                    // for deleted pages.
-                                    cleanUpScrollPrefs();
+                                    deleteFeedDir(feeddir);
                                 }
                             })
                     .setNegativeButton("Cancel",
@@ -804,6 +787,10 @@ I/ActivityManager(  818): Process com.shallowsky.FeedViewer (pid 32069) (adj 13)
 
     }
 
+    //
+    // On an external link, the user gets a choice: save it to be fetched
+    // by FeedMe tomorrow, view it right now in a browser, or cancel.
+    //
     public void handleExternalLink(final String url) {
         // Pop up a dialog to ask what to do:
         AlertDialog.Builder builder
@@ -838,6 +825,7 @@ I/ActivityManager(  818): Process com.shallowsky.FeedViewer (pid 32069) (adj 13)
         alert.show();
     }
 
+    // Add the URL to the saved-urls list to be fetched tomorrow.
     public void saveUrlForLater(String url) {
         String savedUrlPath = mFeedDir + File.separator + "saved-urls";
         try {
@@ -852,45 +840,9 @@ I/ActivityManager(  818): Process com.shallowsky.FeedViewer (pid 32069) (adj 13)
         }
     }
 
+    ///////////////
+    // Events
     //
-    /////////////// events
-    //
-/*
-    // Tapping in the corners of the screen scroll up or down.
-    public boolean scrollIfInTargetZone(MotionEvent e) {
-        DisplayMetrics metrics = new DisplayMetrics();
-        mActivity.getWindowManager().getDefaultDisplay().getMetrics(metrics);
-        float screenWidth = metrics.widthPixels;
-        float screenHeight = metrics.heightPixels;
-
-        // Only accept taps in the corners, not the center --
-        // otherwise we'll have no way to tap on links at top/bottom.
-        float w = screenWidth / 4;
-        if (e.getRawX() > w && e.getRawX() < screenWidth - w) {
-            return false;
-        }
-
-        // Was the tap at the top or bottom of the screen?
-        if (e.getRawY() > screenHeight * .8) {
-            //mScrollLock = SystemClock.uptimeMillis();
-            pageDown(false);
-            // Don't try to save page position: we'll do that after scroll
-            // when we have a new page position.
-            return true;
-        }
-        // ... or near the top?
-        else if (e.getRawY() < screenHeight * .2) {
-            // ICK! but how do we tell how many pixels the buttons take? XXX
-            //mScrollLock = SystemClock.uptimeMillis();
-            pageUp(false);
-            // Again, don't save page position here, wait for callback.
-            return true;
-        }
-
-        // Else the tap was somewhere else: pass it along.
-        return false;
-    }
- */
 
     @Override
     public boolean onTouchEvent(MotionEvent event) {
@@ -931,9 +883,6 @@ I/ActivityManager(  818): Process com.shallowsky.FeedViewer (pid 32069) (adj 13)
             // I haven't found any documentation that explains it)
             // so if we treat this tap as a scroll event, we also
             // have to inhibit link following for a short time.
-
-            // d("FeedViewer", "percentX=" + percentX + ", percentY=" + percentY
-            //         + ", scrollY=" + getScrollY() + ", contentheight=" + getContentHeight());
 
             // Ignore taps near the X center:
             if (percentX > LEFTEDGE && percentX < RIGHTEDGE)

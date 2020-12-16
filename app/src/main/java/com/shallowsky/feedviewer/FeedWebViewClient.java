@@ -29,23 +29,12 @@ public class FeedWebViewClient extends WebViewClient {
     public boolean shouldOverrideUrlLoading(WebView webView, String url) {
         d("FeedViewer", "shouldOverrideUrlLoading " + url);
         FeedWebView feedWebView = (FeedWebView)webView;
-        feedWebView.saveScrollPos();
+        feedWebView.saveState();
 
         if (mDontFollowLinks)
             return true;
 
-        // Don't load if we're waiting for a longpress to time out:
-        /*
-        long scrollDelay = 2000;
-        if (SystemClock.uptimeMillis() < (mScrollLock + scrollDelay)) {
-            return true;
-        }
-         */
-
         // Otherwise, we'll try to load something.
-        // First, save our position on the current page.
-        //saveStateInPreferences();
-        // saveScrollPos();
 
         try {
             URI uri = new URI(url);
